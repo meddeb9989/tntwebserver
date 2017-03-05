@@ -28,7 +28,7 @@ SECRET_KEY = 'r95&x3r_y6%p8be#82wu47_qtxs0qdh4edyul4xzs7)v9ahvk$'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [u'tntwebserver.herokuapp.com']
 
 
 # Application definition
