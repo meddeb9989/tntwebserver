@@ -1,2 +1,3 @@
+guinicorn
 django
 djangorestframework
