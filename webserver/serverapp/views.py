@@ -9,6 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.renderers import JSONRenderer
 from webserver.serverapp.serializers import UserSerializer, GroupSerializer
 from webserver.serverapp.models import Carte, Transaction, Commercant, Employe, Employeur, Recharge
+from sendemail import SendEmail
 
 from datetime import datetime
 
@@ -66,6 +67,10 @@ def valid_transaction(request, number, code, amount, trader):
                 Transaction.objects.create(id_employe=employe, id_commercant=commercant, date=date, montant=int(amount))
                 carte.solde=carte.solde-int(amount)
                 carte.save()
+
+                myemail = SendEmail()
+                myemail.send_email_transaction_valid(self, str(amount), commercant.societe, employe.email, commercant.email)
+
         except Carte.DoesNotExist or Employe.DoesNotExist or Commercant.DoesNotExist:
             data = [{'valide' : u'Transaction non effectuée'}]
         return JSONResponse(data)
