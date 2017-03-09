@@ -69,9 +69,9 @@ def valid_transaction(request, number, code, amount, trader):
                 carte.save()
 
                 myemail = SendEmail()
-                myemail.send_email_transaction_valid(self, str(amount), commercant.societe, employe.email, commercant.email)
+                myemail.send_email_transaction_valid(str(amount), commercant.societe, employe.email, commercant.email)
 
-        except Carte.DoesNotExist or Employe.DoesNotExist or Commercant.DoesNotExist:
+        except Carte.DoesNotExist or Employe.DoesNotExist or Commercant.DoesNotExist or Exception:
             data = [{'valide' : u'Transaction non effectuée'}]
         return JSONResponse(data)
 
