@@ -44,13 +44,6 @@ class Carte(models.Model):
     def __str__(self):
         return str(self.id)
 
-    def add_card(code, number, valid, amount, date):
-        self.objects.create(code=code, num_carte=number, valide=valid, solde=amount, date_expiration=date)
-
-    def get_by_number(self, number):
-    	carte = self.objects.get(num_carte=number)
-    	return carte
-
 
 class Transaction(models.Model):
     id_employe = models.ForeignKey('Employe', on_delete=models.CASCADE)
