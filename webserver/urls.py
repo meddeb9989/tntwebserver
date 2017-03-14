@@ -31,10 +31,12 @@ urlpatterns = [
     url(r'^', include(router.urls)),
     url(r'^admin/', admin.site.urls),
     url(r'^accounts/login/$', views.please_login),
-    url(r'^login/(?P<username>[a-zA-Z0-9_.-]+)/(?P<password>[a-zA-Z0-9_.-]+)/$', views.login_view),
+    url(r'^login/(?P<username>[a-zA-Z0-9_.-]+)/(?P<password>[A-Za-z0-9@#$%^&.:,;+=]+)/$', views.login_view),
+    url(r'^create_user/(?P<username>[a-zA-Z0-9_.-]+)/(?P<password>[A-Za-z0-9@#$%^&.:,;+=]+)/(?P<first_name>[a-zA-Z ]+)/(?P<last_name>[a-zA-Z ]+)/(?P<email>[a-zA-Z0-9_.@-]+)/$', views.create_user),
     url(r'^logout/', views.logout_view),
+    url(r'^send_email/', views.send_email),
     url(r'^transactions/', views.get_all_transactions),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^valid_card/(?P<number>[0-9]+)/$', views.valid_card),
-    url(r'^valid_transaction/(?P<number>[0-9]+)/(?P<code>[0-9]+)/(?P<amount>[-w]+)/(?P<trader>[0-9]+)/$', views.valid_transaction)
+    url(r'^valid_transaction/(?P<number>[0-9]+)/(?P<code>[0-9]+)/(?P<amount>[0-9.0-9]+)/(?P<trader>[0-9]+)/$', views.valid_transaction)
 ]

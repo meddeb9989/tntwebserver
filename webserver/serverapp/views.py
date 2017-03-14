@@ -46,7 +46,7 @@ def login_view(request, username, password):
     user = authenticate(username=username, password=password)
     if user is not None:
         login(request, user)
-        request.session.set_expiry(300)
+        request.session.set_expiry(700)
         request.session['member_id'] = user.id
         data = [{'valide' : u'Login success'}]
     else:
@@ -72,7 +72,7 @@ def please_login(request):
     data = [{'valide' : u'Please Login'}]
     return JSONResponse(data)
 
-@login_required
+@method_decorator(csrf_exempt)
 def get_all_transactions(request):
     try:
         data = []
@@ -87,9 +87,10 @@ def get_all_transactions(request):
                     transactions = Transaction.objects.filter(id_commercant=user_type)
                 except Transaction.DoesNotExist:
                     data = [{'valide' : u'Pas de Transactions'}]
-
+            
+            data = [{'valide' : u'Transactions'}]
             for tran in transactions:
-                tr = {'Employe' : str(tran.id_employe), 'Commercant': str(tran.id_commercant), 'Date': str(tran.date), 'Montant': str(tran.montant)}
+                tr = {'id':user_type.id, 'Employe' : str(tran.id_employe), 'Commercant': str(tran.id_commercant), 'Date': str(tran.date), 'Montant': str(tran.montant)}
                 data.append(tr)
         else:
             data = [{'valide' : u'No User Found'}]
@@ -101,11 +102,22 @@ def get_all_transactions(request):
 def valid_card(request, number):
     if request.method == 'GET':
         try:
-            carte = Carte.objects.get(num_carte=number)
+            carte = Carte.objects.get(num_carte=int(number))
+            print carte
             data = card_validity(carte)
         except Exception:
             data = [{'valide' : u'Carte non reconnu'}]
         return JSONResponse(data)
+
+@method_decorator(csrf_exempt)
+def create_user(request, username, password, first_name, last_name, email):
+    try:
+        date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        #User.objects.create(username=username, password=password, first_name=first_name, last_name=last_name, email=email, is_superuser=False, is_active=False, is_staff=False, last_login=date, date_joined=date)
+        data = [{'valide' : u'User Créer avec Succès'}]
+    except Exception:
+        data = [{'valide' : u'Vérifier les champs'}]
+    return JSONResponse(data)
 
 @method_decorator(csrf_exempt)
 def valid_transaction(request, number, code, amount, trader):
@@ -135,13 +147,15 @@ def valid_transaction(request, number, code, amount, trader):
 
 def card_validity(carte):
     if carte.valide:
-        if carte.date_expiration > datetime.now().date():
+        date = datetime.now().date()
+        print carte.date_expiration, date
+        if carte.date_expiration > date:
             data = [{'valide' : u'valide'}]
         else:
             data = [{'valide' : u'Carte Expirée'}]
     else:
         data = [{'valide', u'Carte non valide'}]
-
+    print data
     return data
 
 def amount_validity(carte, code, amount):
@@ -156,6 +170,13 @@ def amount_validity(carte, code, amount):
             data = [{'valide' : u'Code Incorrect'}]
 
     return data
+
+@method_decorator(csrf_exempt)
+def send_email(request):
+    myemail = SendEmail()
+    myemail.send_email_transaction_valid("19.90", "Farmer's Burger", "meddeb9989@hotmail.fr", "fakher9989@hotmail.fr")
+    data = [{'valide' : u'Email Envoyée'}]
+    return JSONResponse(data)
 
 def detect_user_type(request):
     user_id=request.session['member_id']
