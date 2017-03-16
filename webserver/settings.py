@@ -25,10 +25,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = '$qd9g7#d5o(0ms3iufrvjl=ook5nwyf^8g53$ob7#cns1gbv=d'
 
+CSRF_COOKIE_SECURE = False
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [u'tntwebserver.herokuapp.com', u'127.0.0.1']
+ALLOWED_HOSTS = [u'tntwebserver.herokuapp.com', u'127.0.0.1', u'localhost:8000',u'localhost', u'localhost:5000', u'http://127.0.0.1:5000/']
 
 
 # Application definition
@@ -43,14 +45,20 @@ INSTALLED_APPS = [
     'rest_framework',
     'webserver.serverapp',
     'django.contrib.sites',
+    'rest_framework.authtoken',
 ]
 
 SITE_ID = 1
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAdminUser',
+        'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ),
     'PAGE_SIZE': 10
 }
 
@@ -129,7 +137,15 @@ USE_L10N = True
 USE_TZ = True
 
 
+STATICFILES_STORAGE = 'whitenoise.django.GzipManifestStaticFilesStorage'
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATIC_URL = '/static/'
+
+# Extra places for collectstatic to find static files.
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'static'),
+)

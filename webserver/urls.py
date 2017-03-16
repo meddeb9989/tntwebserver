@@ -20,9 +20,11 @@ from django.conf.urls import url, include
 from rest_framework import routers
 from webserver.serverapp import views
 from django.contrib import admin
+from rest_framework.authtoken import views as tokenviews
+
 
 router = routers.DefaultRouter()
-router.register(r'users', views.UserViewSet)
+router.register(r'accounts', views.UserViewSet, 'list')
 router.register(r'groups', views.GroupViewSet)
 
 # Wire up our API using automatic URL routing.
@@ -34,8 +36,11 @@ urlpatterns = [
     url(r'^login/(?P<username>[a-zA-Z0-9_.-]+)/(?P<password>[A-Za-z0-9@#$%^&.:,;+=]+)/$', views.login_view),
     url(r'^create_user/(?P<username>[a-zA-Z0-9_.-]+)/(?P<password>[A-Za-z0-9@#$%^&.:,;+=]+)/(?P<first_name>[a-zA-Z ]+)/(?P<last_name>[a-zA-Z ]+)/(?P<email>[a-zA-Z0-9_.@-]+)/$', views.create_user),
     url(r'^logout/', views.logout_view),
+    url(r'^api-token-auth/', tokenviews.obtain_auth_token),
     url(r'^send_email/', views.send_email),
     url(r'^transactions/', views.get_all_transactions),
+    url(r'^user/', views.get_user),
+    url(r'^amount/', views.get_amount),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^valid_card/(?P<number>[0-9]+)/$', views.valid_card),
     url(r'^valid_transaction/(?P<number>[0-9]+)/(?P<code>[0-9]+)/(?P<amount>[0-9.0-9]+)/(?P<trader>[0-9]+)/$', views.valid_transaction)

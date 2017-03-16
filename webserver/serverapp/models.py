@@ -3,6 +3,7 @@
 
 from __future__ import unicode_literals
 from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
 from django.db import models
 
 
@@ -37,7 +38,7 @@ class Commercant(models.Model):
 class Carte(models.Model):
     code = models.IntegerField()
     num_carte = models.BigIntegerField()
-    date_expiration = models.DateField()
+    date_expiration = models.DateTimeField()
     valide = models.BooleanField()
     solde = models.DecimalField(max_digits=5, decimal_places=2)
 

@@ -13,6 +13,10 @@ from sendemail import SendEmail
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from datetime import datetime
+from rest_framework.permissions import AllowAny
+from .permissions import IsStaffOrTargetUser
+from rest_framework.decorators import api_view
+
 
 try:
     from collections import OrderedDict
@@ -24,8 +28,13 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows users to be viewed or edited.
     """
-    queryset = User.objects.all().order_by('-date_joined')
     serializer_class = UserSerializer
+    model = User
+ 
+    def get_permissions(self):
+        # allow non-authenticated user to create via POST
+        return (AllowAny() if self.request.method == 'POST'
+                else IsStaffOrTargetUser()),
 
 
 class GroupViewSet(viewsets.ModelViewSet):
@@ -46,11 +55,11 @@ def login_view(request, username, password):
     user = authenticate(username=username, password=password)
     if user is not None:
         login(request, user)
-        request.session.set_expiry(700)
+        request.session.set_expiry(30)
         request.session['member_id'] = user.id
-        data = [{'valide' : u'Login success'}]
+        data = [{'valid' : True, 'id' : user.id}]
     else:
-        data = [{'valide' : u'Login ou mot de passe Incorrect'}]
+        data = [{'valid' : False, 'Error' : u'Login ou mot de passe Incorrect'}]
 
     return JSONResponse(data)
 
@@ -60,7 +69,7 @@ def logout_view(request):
         del request.session['member_id']
     except KeyError:
         pass
-    data = [{'valide' : u'Logout success'}]
+    data = [{'valid' : True}]
     return JSONResponse(data)
 
 def please_login(request):
@@ -69,33 +78,80 @@ def please_login(request):
         del request.session['member_id']
     except KeyError:
         pass
-    data = [{'valide' : u'Please Login'}]
+    data = [{'valid' : False, 'Error' : u'Please Login'}]
     return JSONResponse(data)
 
-@method_decorator(csrf_exempt)
-def get_all_transactions(request):
-    try:
-        data = []
-        user_type=detect_user_type(request)
-        print user_type
+@api_view(['POST','GET'])
+def get_user(request):
+    if request.user.is_authenticated():
+        usr_type = ""
+        user_type=detect_user_type(request.user.id)
+        if isinstance(user_type, Employe):
+            usr_type = u'Employe'
+        elif isinstance(user_type, Employeur):
+            usr_type = u'Employeur'
+        elif isinstance(user_type, Commercant):
+            usr_type = u'Trader'
+        data = [{'valid' : True, 'id':request.user.id, 'type': usr_type, 'name' : request.user.first_name+" "+request.user.last_name}]
+    else:
+        data = [{'valid' : False, 'Error' : u'Please Login'}]
+
+    return JSONResponse(data)
+
+@api_view(['POST','GET'])
+def get_amount(request):
+    if request.user.is_authenticated():
+        user_type=detect_user_type(request.user.id)
         if user_type is not None:
-            transactions = None
-            try:
-                transactions = Transaction.objects.filter(id_employe=user_type)
-            except Exception:
-                try:
-                    transactions = Transaction.objects.filter(id_commercant=user_type)
-                except Transaction.DoesNotExist:
-                    data = [{'valide' : u'Pas de Transactions'}]
-            
-            data = [{'valide' : u'Transactions'}]
-            for tran in transactions:
-                tr = {'id':user_type.id, 'Employe' : str(tran.id_employe), 'Commercant': str(tran.id_commercant), 'Date': str(tran.date), 'Montant': str(tran.montant)}
-                data.append(tr)
+            if isinstance(user_type, Employe):
+                print user_type.num_carte
+                carte = user_type.num_carte
+                solde = carte.solde
+                print solde
+                data = [{'valid' : True, 'amount': solde}]
+            else:
+                data = [{'valid' : False, 'Error' : u'User not Employe'}]
         else:
-            data = [{'valide' : u'No User Found'}]
-    except Exception:
-        data = [{'valide' : u'Pas de Transactions'}]
+            data = [{'valid' : False, 'Error' : u'User not Found'}]
+    else:
+        data = [{'valid' : False, 'Error' : u'Please Login'}]
+
+    return JSONResponse(data)
+
+@api_view(['POST','GET'])
+def get_all_transactions(request):
+    if request.user.is_authenticated():
+        try:
+            data = []
+            user_type=detect_user_type(request.user.id)
+            if user_type is not None:
+                transactions = None
+                if isinstance(user_type, Employe):
+                    try:
+                        transactions = Transaction.objects.filter(id_employe=user_type)
+                        data = [{'valid' : True}]
+                        for tran in transactions:
+                            tr = {'id':user_type.id, 'Transaction' : str(tran.id_commercant), 'Date': str(tran.date), 'Montant': str(tran.montant)}
+                            data.append(tr)
+                    except Exception:
+                        data = [{'valid' : False, 'Error' : u'Pas de Transactions'}]
+                elif isinstance(user_type, Commercant):
+                    try:
+                        transactions = Transaction.objects.filter(id_commercant=user_type)
+                        data = [{'valid' : True}]
+                        for tran in transactions:
+                            tr = {'id':user_type.id, 'Transaction' : str(tran.id_employe), 'Date': str(tran.date), 'Montant': str(tran.montant)}
+                            data.append(tr)
+                    except Exception:
+                        data = [{'valid' : False, 'Error' : u'Pas de Transactions'}]
+                
+            else:
+                data = [{'valid' : False, 'Error' : u'No User Found'}]
+        except Exception:
+            data = [{'valid' : False, 'Error' : u'Pas de Transactions'}]
+    else:
+        data = [{'valid' : False, 'Error' : u'Please login'}]
+
     return JSONResponse(data)
 
 @method_decorator(csrf_exempt)
@@ -106,7 +162,7 @@ def valid_card(request, number):
             print carte
             data = card_validity(carte)
         except Exception:
-            data = [{'valide' : u'Carte non reconnu'}]
+            data = [{'valid' : False, 'Error' : u'Carte non reconnu'}]
         return JSONResponse(data)
 
 @method_decorator(csrf_exempt)
@@ -114,9 +170,9 @@ def create_user(request, username, password, first_name, last_name, email):
     try:
         date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         #User.objects.create(username=username, password=password, first_name=first_name, last_name=last_name, email=email, is_superuser=False, is_active=False, is_staff=False, last_login=date, date_joined=date)
-        data = [{'valide' : u'User Créer avec Succès'}]
+        data = [{'valid' : True}]
     except Exception:
-        data = [{'valide' : u'Vérifier les champs'}]
+        data = [{'valid' : False, 'Error' : u'Vérifier les champs'}]
     return JSONResponse(data)
 
 @method_decorator(csrf_exempt)
@@ -125,7 +181,7 @@ def valid_transaction(request, number, code, amount, trader):
         try:
             carte = Carte.objects.get(num_carte=number)
             data = amount_validity(carte, code, amount)
-            if data[0]['valide']==u'Transaction Validée':
+            if data[0]['valid']:
                 employe = Employe.objects.get(num_carte=carte)
                 commercant = Commercant.objects.get(id=int(trader))
                 date = datetime.now().date()
@@ -138,7 +194,7 @@ def valid_transaction(request, number, code, amount, trader):
                 myemail.send_email_transaction_valid(str(amount), commercant.societe, employe.email, commercant.email)
 
         except Exception:
-            data = [{'valide' : u'Transaction non effectuée'}]
+            data = [{'valid' : False, 'Error' : u'Transaction non effectuée'}]
         return JSONResponse(data)
 
     elif request.method == 'POST':
@@ -150,24 +206,24 @@ def card_validity(carte):
         date = datetime.now().date()
         print carte.date_expiration, date
         if carte.date_expiration > date:
-            data = [{'valide' : u'valide'}]
+            data = [{'valid' : True}]
         else:
-            data = [{'valide' : u'Carte Expirée'}]
+            data = [{'valid' : False, 'Error' : u'Carte Expirée'}]
     else:
-        data = [{'valide', u'Carte non valide'}]
+        data = [{'valid' : False, 'Error' : u'Carte non valide'}]
     print data
     return data
 
 def amount_validity(carte, code, amount):
     data = card_validity(carte)
-    if data[0]['valide']==u'valide':
+    if data[0]['valid']:
         if carte.code == int(code):
             if carte.solde > int(amount):
-                data = [{'valide': u'Transaction Validée'}]
+                data = [{'valid' : True}]
             else:
-                data = [{'valide' : u'Solde Insuffisant'}]
+                data = [{'valid' : False, 'Error' : u'Solde Insuffisant'}]
         else:
-            data = [{'valide' : u'Code Incorrect'}]
+            data = [{'valid' : False, 'Error' : u'Code Incorrect'}]
 
     return data
 
@@ -175,11 +231,11 @@ def amount_validity(carte, code, amount):
 def send_email(request):
     myemail = SendEmail()
     myemail.send_email_transaction_valid("19.90", "Farmer's Burger", "meddeb9989@hotmail.fr", "fakher9989@hotmail.fr")
-    data = [{'valide' : u'Email Envoyée'}]
+    data = [{'valid' : True}]
     return JSONResponse(data)
 
-def detect_user_type(request):
-    user_id=request.session['member_id']
+def detect_user_type(user_id):
+    #user_id=request.session['member_id']
     user=User.objects.get(id=user_id)
     user_type = None
     try:
@@ -191,6 +247,6 @@ def detect_user_type(request):
             try:
                 user_type = Commercant.objects.get(user=user)
             except Exception:
-                data = [{'valide' : u'No User Found'}]
+                data = [{'valid' : False, 'Error' : u'No User Found'}]
     print user_type
     return user_type
