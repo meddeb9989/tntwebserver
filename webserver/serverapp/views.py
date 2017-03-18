@@ -85,14 +85,23 @@ def please_login(request):
 def get_user(request):
     if request.user.is_authenticated():
         usr_type = ""
+        group = ""
         user_type=detect_user_type(request.user.id)
+        groups=request.user.groups.all()
+
+        if len(groups)>1:
+            group = str(groups[0].name) + "&" + str(groups[1].name)
+        else:
+            group = str(groups[0].name)
+
         if isinstance(user_type, Employe):
             usr_type = u'Employe'
         elif isinstance(user_type, Employeur):
             usr_type = u'Employeur'
         elif isinstance(user_type, Commercant):
             usr_type = u'Trader'
-        data = [{'valid' : True, 'id':request.user.id, 'type': usr_type, 'name' : request.user.first_name+" "+request.user.last_name}]
+
+        data = [{'valid' : True, 'id':request.user.id, 'group': group, 'type': usr_type, 'name' : request.user.first_name+" "+request.user.last_name}]
     else:
         data = [{'valid' : False, 'Error' : u'Please Login'}]
 
@@ -119,6 +128,72 @@ def get_amount(request):
     return JSONResponse(data)
 
 @api_view(['POST','GET'])
+def get_cads(request):
+    if request.user.is_authenticated():
+        try:
+            data = []
+            user_type=detect_user_type(request.user.id)
+            if user_type is not None:
+                card = None
+                emplyes = None
+                if isinstance(user_type, Employeur):
+                    try:
+                        employes = Employe.objects.filter(id_employeur=user_type)
+                        data = [{'valid' : True}]
+                        for employe in employes:
+                            card = Carte.objects.get(employe=employe)
+                            crd = {'id':card.id, 'Carte' : str(card.num_carte), 'Date': card.date_expiration, 'Nom': str(employe)}
+                            data.append(crd)
+                    except Exception as e:
+                        print e
+                        data = [{'valid' : False, 'Error' : u'Pas de Cartes'}]
+                else:
+                    data = [{'valid' : False, 'Error' : u'Permissions Denied'}]
+                
+            else:
+                data = [{'valid' : False, 'Error' : u'No User Found'}]
+        except Exception:
+            data = [{'valid' : False, 'Error' : u'Pas de Cartes'}]
+    else:
+        data = [{'valid' : False, 'Error' : u'Please login'}]
+
+    return JSONResponse(data)
+
+@api_view(['POST','GET'])
+def get_rh_cads(request):
+    if request.user.is_authenticated():
+        try:
+            data = []
+            user=detect_user_type(request.user.id)
+            user_type=user.id_employeur
+            if user_type is not None:
+                card = None
+                emplyes = None
+                if isinstance(user_type, Employeur):
+                    try:
+                        employes = Employe.objects.filter(id_employeur=user_type)
+                        data = [{'valid' : True}]
+                        for employe in employes:
+                            card = Carte.objects.get(employe=employe)
+                            crd = {'id':card.id, 'Carte' : str(card.num_carte), 'Date': card.date_expiration, 'Nom': str(employe)}
+                            data.append(crd)
+                    except Exception as e:
+                        print e
+                        data = [{'valid' : False, 'Error' : u'Pas de Cartes'}]
+                else:
+                    data = [{'valid' : False, 'Error' : u'Permissions Denied'}]
+                
+            else:
+                data = [{'valid' : False, 'Error' : u'No User Found'}]
+        except Exception:
+            data = [{'valid' : False, 'Error' : u'Pas de Cartes'}]
+    else:
+        data = [{'valid' : False, 'Error' : u'Please login'}]
+
+    return JSONResponse(data)
+      
+
+@api_view(['POST','GET'])
 def get_all_transactions(request):
     if request.user.is_authenticated():
         try:
@@ -131,8 +206,8 @@ def get_all_transactions(request):
                         transactions = Transaction.objects.filter(id_employe=user_type)
                         data = [{'valid' : True}]
                         for tran in transactions:
-                            tr = {'id':user_type.id, 'Transaction' : str(tran.id_commercant), 'Date': str(tran.date), 'Montant': str(tran.montant)}
-                            data.append(tr)
+                            tr = {'id':user_type.id, 'Transaction' : str(tran.id_commercant), 'Date': tran.date, 'Montant': str(tran.montant)}
+                            data.insert(1, tr)
                     except Exception:
                         data = [{'valid' : False, 'Error' : u'Pas de Transactions'}]
                 elif isinstance(user_type, Commercant):
@@ -140,8 +215,8 @@ def get_all_transactions(request):
                         transactions = Transaction.objects.filter(id_commercant=user_type)
                         data = [{'valid' : True}]
                         for tran in transactions:
-                            tr = {'id':user_type.id, 'Transaction' : str(tran.id_employe), 'Date': str(tran.date), 'Montant': str(tran.montant)}
-                            data.append(tr)
+                            tr = {'id':user_type.id, 'Transaction' : str(tran.id_employe), 'Date': tran.date, 'Montant': str(tran.montant)}
+                            data.insert(1, tr)
                     except Exception:
                         data = [{'valid' : False, 'Error' : u'Pas de Transactions'}]
                 
@@ -154,16 +229,18 @@ def get_all_transactions(request):
 
     return JSONResponse(data)
 
-@method_decorator(csrf_exempt)
+@api_view(['POST','GET'])
 def valid_card(request, number):
-    if request.method == 'GET':
+    if request.user.is_authenticated():
         try:
             carte = Carte.objects.get(num_carte=int(number))
-            print carte
             data = card_validity(carte)
         except Exception:
             data = [{'valid' : False, 'Error' : u'Carte non reconnu'}]
-        return JSONResponse(data)
+    else:
+        data = [{'valid' : False, 'Error' : u'Please login'}]
+
+    return JSONResponse(data)
 
 @method_decorator(csrf_exempt)
 def create_user(request, username, password, first_name, last_name, email):
@@ -175,16 +252,16 @@ def create_user(request, username, password, first_name, last_name, email):
         data = [{'valid' : False, 'Error' : u'Vérifier les champs'}]
     return JSONResponse(data)
 
-@method_decorator(csrf_exempt)
-def valid_transaction(request, number, code, amount, trader):
-    if request.method == 'GET':
+@api_view(['POST','GET'])
+def valid_transaction(request, number, code, amount):
+    if request.user.is_authenticated():
         try:
             carte = Carte.objects.get(num_carte=number)
             data = amount_validity(carte, code, amount)
             if data[0]['valid']:
                 employe = Employe.objects.get(num_carte=carte)
-                commercant = Commercant.objects.get(id=int(trader))
-                date = datetime.now().date()
+                commercant = Commercant.objects.get(user=int(request.user))
+                date = datetime.now()
 
                 Transaction.objects.create(id_employe=employe, id_commercant=commercant, date=date, montant=int(amount))
                 carte.solde=carte.solde-int(amount)
@@ -195,15 +272,14 @@ def valid_transaction(request, number, code, amount, trader):
 
         except Exception:
             data = [{'valid' : False, 'Error' : u'Transaction non effectuée'}]
-        return JSONResponse(data)
+    else:
+        data = [{'valid' : False, 'Error' : u'Please login'}]
 
-    elif request.method == 'POST':
-        print "on est dans le post : " + number
-        return JSONResponse(data)
+    return JSONResponse(data)
 
 def card_validity(carte):
     if carte.valide:
-        date = datetime.now().date()
+        date = datetime.now()
         print carte.date_expiration, date
         if carte.date_expiration > date:
             data = [{'valid' : True}]

@@ -39,9 +39,11 @@ urlpatterns = [
     url(r'^api-token-auth/', tokenviews.obtain_auth_token),
     url(r'^send_email/', views.send_email),
     url(r'^transactions/', views.get_all_transactions),
+    url(r'^cards/', views.get_cads),
+    url(r'^rh_cards/', views.get_rh_cads),
     url(r'^user/', views.get_user),
     url(r'^amount/', views.get_amount),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^valid_card/(?P<number>[0-9]+)/$', views.valid_card),
-    url(r'^valid_transaction/(?P<number>[0-9]+)/(?P<code>[0-9]+)/(?P<amount>[0-9.0-9]+)/(?P<trader>[0-9]+)/$', views.valid_transaction)
+    url(r'^valid_transaction/(?P<number>[0-9]+)/(?P<code>[0-9]+)/(?P<amount>[0-9.0-9]+)/$', views.valid_transaction)
 ]

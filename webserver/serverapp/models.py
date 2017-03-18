@@ -40,7 +40,7 @@ class Carte(models.Model):
     num_carte = models.BigIntegerField()
     date_expiration = models.DateTimeField()
     valide = models.BooleanField()
-    solde = models.DecimalField(max_digits=5, decimal_places=2)
+    solde = models.DecimalField(max_digits=7, decimal_places=2)
 
     def __str__(self):
         return str(self.id)
@@ -50,7 +50,7 @@ class Transaction(models.Model):
     id_employe = models.ForeignKey('Employe', on_delete=models.CASCADE)
     id_commercant = models.ForeignKey('Commercant', on_delete=models.CASCADE)
     date = models.DateTimeField()
-    montant = models.DecimalField(max_digits=5, decimal_places=2)
+    montant = models.DecimalField(max_digits=7, decimal_places=2)
 
     def __str__(self):
         return "Employe: " + str(self.id_employe) + " Commercant: " + str(self.id_commercant) + " Date: " + str(self.date)
@@ -58,7 +58,7 @@ class Transaction(models.Model):
 
 class Recharge(models.Model):
     id_employeur = models.ForeignKey('Employeur', on_delete=models.CASCADE)
-    montant_employe = models.DecimalField(max_digits=5, decimal_places=2)
+    montant_employe = models.DecimalField(max_digits=7, decimal_places=2)
     date = models.DateTimeField()
 
     def __str__(self):
