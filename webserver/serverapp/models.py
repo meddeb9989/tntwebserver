@@ -43,8 +43,12 @@ class Carte(models.Model):
     solde = models.DecimalField(max_digits=7, decimal_places=2)
 
     def __str__(self):
-        emp = Employe.objects.get(num_carte=self)
-        return str(emp.user.first_name + ' ' + emp.user.last_name) +' : '+ str(self.num_carte)
+        try:
+            emp = Employe.objects.get(num_carte=self)
+            aff = str(self.id)+" : "+emp.user.first_name + ' ' + emp.user.last_name +' : '+ str(self.num_carte)
+        except Exception:
+            aff = str(self.id)+u" : Non Affectée : "+str(self.num_carte)
+        return aff
 
 
 class Transaction(models.Model):
