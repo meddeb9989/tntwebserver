@@ -43,7 +43,8 @@ class Carte(models.Model):
     solde = models.DecimalField(max_digits=7, decimal_places=2)
 
     def __str__(self):
-        return str(self.id)
+        emp = Employe.objects.get(num_carte=self)
+        return str(emp.user.first_name + ' ' + emp.user.last_name) +' : '+ str(self.num_carte)
 
 
 class Transaction(models.Model):
