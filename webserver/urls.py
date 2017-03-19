@@ -46,6 +46,7 @@ urlpatterns = [
     url(r'^rh_cards/', views.get_rh_cads),
     url(r'^bloc_card/', views.bloc_card),
     url(r'^card_state/', views.card_state),
+    url(r'^bank_transaction/', views.bank_transaction),
     url(r'^user/', views.get_user),
     url(r'^amount/', views.get_amount),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),

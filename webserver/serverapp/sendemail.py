@@ -26,12 +26,13 @@ class SendEmail(object):
             email_employee=str(unicode(email_employee))
             email_trader=str(unicode(email_trader))
             my_email = GetEmail()
-            
-            message_employee = my_email
+            my_email.set_transaction_email(amount, trader, employe)
+
+            message_employee = my_email.get_transaction_email()
             Subject_employee = 'Reçu pour votre paiement à ' + trader 
             self.yag.send(email_employee, subject=Subject_employee, contents=message_employee, headers={"From":"TAN & TECH", "To":email_employee})
 
-            message_trader = my_email
+            message_trader = my_email.get_transaction_email()
             Subject_trader = 'Paiement Reçu '
             self.yag.send(email_trader, subject=Subject_trader, contents=message_trader, headers={"From":"TAN & TECH", "To":email_trader})
       

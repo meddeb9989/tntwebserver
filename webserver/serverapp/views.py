@@ -309,6 +309,11 @@ def get_all_transactions(request):
 
     return JSONResponse(data)
 
+def bank_transaction(request):
+    data = [{'valid' : True}]
+    print "Transaction Sent"
+    return JSONResponse(data)
+
 @api_view(['POST','GET'])
 def valid_card(request, number):
     if request.user.is_authenticated():
@@ -418,7 +423,7 @@ def amount_add_validity(carte, amount):
 @method_decorator(csrf_exempt)
 def send_email(request):
     myemail = SendEmail()
-    myemail.send_email_transaction_valid("19.90", "Farmer's Burger", "meddeb9989@hotmail.fr", "fakher9989@hotmail.fr")
+    myemail.send_email_transaction_valid("19.90", "Farmer's Burger", "meddeb9989@hotmail.fr", "fakher9989@hotmail.fr", "Meddeb")
     data = [{'valid' : True}]
     return JSONResponse(data)
 
