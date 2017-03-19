@@ -5,5 +5,5 @@ import requests
 
 website_url="https://tntwebserver.herokuapp.com/"
 url=website_url+"send_email/"
-r=requests.get(url)
-print r.text
+#r=requests.get(url)
+#print r.text
