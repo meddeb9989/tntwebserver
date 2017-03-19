@@ -55,6 +55,7 @@ class Transaction(models.Model):
     id_employe = models.ForeignKey('Employe', on_delete=models.CASCADE)
     id_commercant = models.ForeignKey('Commercant', on_delete=models.CASCADE)
     date = models.DateTimeField()
+    confirmed = models.BooleanField(default=False)
     montant = models.DecimalField(max_digits=7, decimal_places=2)
 
     def __str__(self):

@@ -3,7 +3,7 @@
 
 import requests
 
-website_url="http://127.0.0.1:8000/"
+website_url="https://tntwebserver.herokuapp.com/"
 url=website_url+"send_email/"
 r=requests.get(url)
 print r.text
