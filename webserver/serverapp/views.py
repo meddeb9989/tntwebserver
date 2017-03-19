@@ -342,16 +342,15 @@ def recharge_card(request, ids, amount):
                 employe = Employe.objects.get(num_carte=carte)
                 carte.solde=carte.solde+int(amount)
                 carte.save()
-
-                myemail = SendEmail()
-                myemail.send_email_recharge_valid(str(amount), employe.email, str(employe))
+                #myemail = SendEmail()
+                #myemail.send_email_recharge_valid(str(amount), employe.email, str(employe))
 
         except Exception as e:
             print e
             data = [{'valid' : False, 'Error' : u'Recharge non effectuée'}]
     else:
         data = [{'valid' : False, 'Error' : u'Please login'}]
-    print data
+
     return JSONResponse(data)
 
 @api_view(['POST','GET'])
@@ -371,7 +370,7 @@ def valid_transaction(request, number, code, amount):
 
                 myemail = SendEmail()
                 myemail.send_email_transaction_valid(str(amount), str(commercant), employe.email, commercant.email, str(employe))
-
+            
         except Exception:
             data = [{'valid' : False, 'Error' : u'Transaction non effectuée'}]
     else:
@@ -406,13 +405,13 @@ def amount_validity(carte, code, amount):
     return data
 
 def amount_add_validity(carte, amount):
-    if int(amount) > 0 and int(amount) < 9999:
+    if int(amount) > 0 and int(amount) <= 9999:
         if carte.solde + int(amount) < 10000:
             data = [{'valid' : True}]
         else:
-            data = [{'valid' : False, 'Error' : u'Valeur très grande, Nouveau solde dépasse 9999€ '}]
+            data = [{'valid' : False, 'Error' : u'Valeur très grande, Nouveau solde dépasse 9999€ Carte : '+str(carte.num_carte)}]
     else:
-        data = [{'valid' : False, 'Error' : u'Valeur Incorrect doit etre comprise entre 0 et 9999'}]
+        data = [{'valid' : False, 'Error' : u'Valeur Incorrect doit etre comprise entre 0 et 9999 Carte : '+str(carte.num_carte)}]
 
     return data
 
