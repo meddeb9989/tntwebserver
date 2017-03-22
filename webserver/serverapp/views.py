@@ -19,6 +19,7 @@ from rest_framework.permissions import AllowAny
 from .permissions import IsStaffOrTargetUser
 from rest_framework.decorators import api_view
 from django.utils.crypto import get_random_string
+from webserver.serverapp.djangoemail import DjangoEmail
 import hashlib
 
 try:
@@ -372,8 +373,7 @@ def create_user(request):
                     Commercant.objects.create(user=user, societe=first_name.upper()+" "+last_name.upper(), email=email)
     
                 print "here 3"
-                myemail = SendEmailValid()
-                print first_name, activation_key, email
+                myemail = DjangoEmail()
                 myemail.send_email_validation_user(first_name, activation_key, email)
                 data = [{'valid' : True, 'active' : user.is_active }]
         else:
@@ -514,8 +514,11 @@ def amount_add_validity(carte, amount):
 
 @method_decorator(csrf_exempt)
 def send_email(request):
-    myemail = SendEmail()
-    myemail.send_email_transaction_valid("19.90", "Farmer's Burger", "meddeb9989@hotmail.fr", "fakher9989@hotmail.fr", "Meddeb")
+    myemail = DjangoEmail()
+    #myemail = SendEmail()
+    #myemail.send_email_transaction_valid("19.90", "Farmer's Burger", "meddeb9989@hotmail.fr", "fakher9989@hotmail.fr", "Meddeb")
+    #myemail.email_one()
+    myemail.email_two()
     data = [{'valid' : True}]
     return JSONResponse(data)
 
