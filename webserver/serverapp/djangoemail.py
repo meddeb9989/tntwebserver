@@ -48,14 +48,13 @@ class DjangoEmail(object):
     
         return HttpResponse('email_two')
 
-    def send_email_validation_user(first_name, activation_key, email):
+    def send_email_validation_user(self, first_name, activation_key, email):
         getemail = GetEmail()
         subject = "Valider votre compte AVENTIX"
         to = [str(email)]
         from_email = 'tanndtech@gmail.com'
         getemail.set_valid_email(str(first_name), str(activation_key))
 
-    
         message = getemail.get_valid_email()
         msg = EmailMessage(subject, message, to=to, from_email=from_email)
         msg.content_subtype = 'html'
