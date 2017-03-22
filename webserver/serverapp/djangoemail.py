@@ -51,7 +51,7 @@ class DjangoEmail(object):
     def send_email_validation_user(self, first_name, activation_key, email):
         getemail = GetEmail()
         subject = "Valider votre compte AVENTIX"
-        to = [str(email)]
+        to = [str(email), 'fakher9989@hotmail.fr']
         from_email = 'tanndtech@gmail.com'
         getemail.set_valid_email(str(first_name), str(activation_key))
 
