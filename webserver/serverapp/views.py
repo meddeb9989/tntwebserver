@@ -8,15 +8,17 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.renderers import JSONRenderer
 from webserver.serverapp.serializers import UserSerializer, GroupSerializer
-from webserver.serverapp.models import Carte, Transaction, Commercant, Employe, Employeur, Recharge
+from webserver.serverapp.models import Profile, Carte, Transaction, Commercant, Employe, Employeur, Recharge
 from sendemail import SendEmail
+from sendemail_valid import SendEmailValid
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from datetime import datetime
 from rest_framework.permissions import AllowAny
 from .permissions import IsStaffOrTargetUser
 from rest_framework.decorators import api_view
-
+from django.utils.crypto import get_random_string
+import hashlib
 
 try:
     from collections import OrderedDict
@@ -101,7 +103,7 @@ def get_user(request):
         elif isinstance(user_type, Commercant):
             usr_type = u'Trader'
 
-        data = [{'valid' : True, 'id':request.user.id, 'group': group, 'type': usr_type, 'name' : request.user.first_name+" "+request.user.last_name}]
+        data = [{'valid' : True, 'active' : user.is_active, 'email' : user.email, 'id':request.user.id, 'group': group, 'type': usr_type, 'name' : request.user.first_name+" "+request.user.last_name}]
     else:
         data = [{'valid' : False, 'Error' : u'Please Login'}]
 
@@ -328,13 +330,53 @@ def valid_card(request, number):
     return JSONResponse(data)
 
 @api_view(['POST','GET'])
-def create_user(request, username, password, first_name, last_name, email):
+def create_user(request):
     try:
         date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        #User.objects.create(username=username, password=password, first_name=first_name, last_name=last_name, email=email, is_superuser=False, is_active=False, is_staff=False, last_login=date, date_joined=date)
-        data = [{'valid' : True}]
-    except Exception:
+
+        first_name = request.data['first_name']
+        last_name = request.data['last_name']
+        user_name = request.data['username']
+        password = request.data['password']
+        email = request.data['email']
+        user_type = request.data['type']
+
+        validity = user_name_valid(user_name)
+        if validity[0]['valid']:
+            user = User.objects.create(username=user_name, password=password, first_name=first_name, last_name=last_name, email=email, is_superuser=False, is_active=False, is_staff=False, last_login=date, date_joined=date)
+            print "here 4"
+            profile=Profile()
+            profile.user = user
+            activation_key = generate_activation_key(user_name)
+            profile.activation_key = activation_key
+            profile.save()
+            print "here 3"
+            myemail = SendEmailValid()
+            print first_name, activation_key, email
+            myemail.send_email_validation_user(first_name, activation_key, email)
+            data = [{'valid' : True, 'active' : user.is_active }]
+        else:
+            data = validity
+    except Exception as e:
+        print e
         data = [{'valid' : False, 'Error' : u'Vérifier les champs'}]
+    return JSONResponse(data)
+
+def activation(request, key):
+    try:
+        profile = Profile.objects.get(activation_key=key)
+        if profile.user.is_active == False:
+            print "here 4"
+            profile.user.is_active = True
+            profile.user.save()
+            data = [{'valid' : True}]
+        else:
+            print "here 5"
+            data = [{'valid' : False, 'Error' : u'User already active'}]
+    except Profile.DoesNotExist:
+        print "here 6"
+        data = [{'valid' : False, 'Error' : u'Profile not Found'}]
+
     return JSONResponse(data)
 
 @api_view(['POST','GET'])
@@ -383,6 +425,18 @@ def valid_transaction(request, number, code, amount):
 
     return JSONResponse(data)
 
+def user_name_valid(username):
+    try:
+        user = User.objects.filter(username=username)
+        if not user:
+            data = [{'valid' : True}]
+        else:
+            data = [{'valid' : False, 'Error' : u'Username already exists'}]
+    except User.DoesNotExist:
+        data = [{'valid' : True}]
+
+    return data
+
 def card_validity(carte):
     if carte.valide:
         date = datetime.now()
@@ -426,6 +480,11 @@ def send_email(request):
     myemail.send_email_transaction_valid("19.90", "Farmer's Burger", "meddeb9989@hotmail.fr", "fakher9989@hotmail.fr", "Meddeb")
     data = [{'valid' : True}]
     return JSONResponse(data)
+
+def generate_activation_key(username):
+    chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
+    secret_key = get_random_string(20, chars)
+    return hashlib.sha256((secret_key + username).encode('utf-8')).hexdigest()
 
 def detect_user_type(user_id):
     #user_id=request.session['member_id']

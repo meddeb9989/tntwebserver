@@ -7,6 +7,19 @@ from rest_framework.authtoken.models import Token
 from django.db import models
 
 
+class Profile(models.Model):
+    user = models.OneToOneField(User, related_name='profile') #1 to 1 link with Django User
+    activation_key = models.CharField(max_length=40)
+
+    def __str__(self):
+        try:
+            user = User.objects.get(id=self.user.id)
+            aff = user.first_name + ' ' + user.last_name
+        except Exception:
+            aff = str(self.id)
+        return aff
+
+
 class Employe(models.Model):
     user = models.OneToOneField(User, default=1)
     num_carte = models.ForeignKey('Carte', on_delete=models.CASCADE)
@@ -14,7 +27,12 @@ class Employe(models.Model):
     id_employeur = models.ForeignKey('Employeur', on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.user.first_name + ' ' + self.user.last_name
+        try:
+            user = User.objects.get(id=self.user.id)
+            aff = user.first_name + ' ' + user.last_name
+        except Exception:
+            aff = str(self.id)
+        return aff
 
 
 class Employeur(models.Model):
@@ -23,7 +41,12 @@ class Employeur(models.Model):
     email = models.EmailField()
 
     def __str__(self):
-        return self.user.first_name + ' ' + self.user.last_name
+        try:
+            user = User.objects.get(id=self.user.id)
+            aff = user.first_name + ' ' + user.last_name
+        except Exception:
+            aff = str(self.id)
+        return aff
 
 
 class Commercant(models.Model):
@@ -32,7 +55,12 @@ class Commercant(models.Model):
     email = models.EmailField()
 
     def __str__(self):
-        return self.user.first_name + ' ' + self.user.last_name
+        try:
+            user = User.objects.get(id=self.user.id)
+            aff = user.first_name + ' ' + user.last_name
+        except Exception:
+            aff = str(self.id)
+        return aff
 
 
 class Carte(models.Model):
