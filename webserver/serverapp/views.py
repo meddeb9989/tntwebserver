@@ -476,7 +476,7 @@ def activation(request, key):
             print "here 4"
             profile.user.is_active = True
             profile.user.save()
-            data = render(request, 'serverapp/templates/valid_user.html')
+            data = render(request, 'webserver/serverapp/templates/valid_user.html')
         else:
             print "here 5"
             data = [{'valid' : False, 'Error' : u'User already active'}]
