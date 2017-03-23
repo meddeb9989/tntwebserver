@@ -26,6 +26,7 @@ from rest_framework.response import Response
 from django.db.models import Count
 from django.utils import timezone
 import requests
+from decimal import *
 import json
 import random
 import hashlib
@@ -534,7 +535,7 @@ def create_emp(request):
                 g = Group.objects.get(name='Employe') 
                 g.user_set.add(user)
 
-                if user_type == u'RH':
+                if user_type == u'rh':
                     g = Group.objects.get(name='Employeur') 
                     g.user_set.add(user)
 
@@ -574,10 +575,10 @@ def recharge_card(request, ids, amount):
     if request.user.is_authenticated():
         try:
             carte = Carte.objects.get(id=int(ids))
-            data = amount_add_validity(carte, int(amount))
+            data = amount_add_validity(carte, Decimal(amount))
             if data[0]['valid']:
                 employe = Employe.objects.get(num_carte=carte)
-                carte.solde=carte.solde+int(amount)
+                carte.solde=carte.solde+Decimal(amount)
                 carte.save()
                 #myemail = SendEmail()
                 #myemail.send_email_recharge_valid(str(amount), employe.email, str(employe))
@@ -602,12 +603,12 @@ def valid_transaction(request, number, code, amount):
                 commercant = Commercant.objects.get(user=user)
                 date = datetime.datetime.now()
 
-                Transaction.objects.create(id_employe=employe, id_commercant=commercant, date=date, montant=float(amount))
-                carte.solde=carte.solde-float(amount)
+                Transaction.objects.create(id_employe=employe, id_commercant=commercant, date=date, montant=Decimal(amount))
+                carte.solde=carte.solde-Decimal(amount)
                 carte.save()
 
                 myemail = SendEmail()
-                myemail.send_email_transaction_valid(float(amount), str(commercant), employe.email, commercant.email, str(employe))
+                myemail.send_email_transaction_valid(Decimal(amount), str(commercant), employe.email, commercant.email, str(employe))
             
         except Exception as e:
             print e
@@ -664,7 +665,7 @@ def amount_validity(carte, code, amount):
     data = card_validity(carte)
     if data[0]['valid']:
         if carte.code == int(code):
-            if carte.solde > float(amount):
+            if carte.solde > Decimal(amount):
                 data = [{'valid' : True}]
             else:
                 data = [{'valid' : False, 'Error' : u'Solde Insuffisant'}]
@@ -674,8 +675,8 @@ def amount_validity(carte, code, amount):
     return data
 
 def amount_add_validity(carte, amount):
-    if float(amount) > 0 and float(amount) <= 9999:
-        if carte.solde + float(amount) < 10000:
+    if Decimal(amount) > 0 and Decimal(amount) <= 9999:
+        if carte.solde + Decimal(amount) < 10000:
             data = [{'valid' : True}]
         else:
             data = [{'valid' : False, 'Error' : u'Valeur très grande, Nouveau solde dépasse 9999€ Carte : '+str(carte.num_carte)}]
