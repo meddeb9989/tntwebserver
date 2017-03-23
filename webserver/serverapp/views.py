@@ -526,7 +526,8 @@ def create_emp(request):
                 num_carte =int(str(190193187) + str(random.randrange(0, 999, 3)))
                 carte = Carte.objects.create(code=code, num_carte=num_carte, valide=True, solde=amount, date_expiration=next_year.strftime("%Y-%m-%d %H:%M:%S"))
                 
-                employeur = Employeur.objects.get(user=request.user.id)
+                user_employeur = User.objects.get(id=request.user.id)
+                employeur = Employeur.objects.get(user=user_employeur)
                 emp = Employe.objects.create(user=user, email=email, num_carte=carte, id_employeur=employeur)
 
                 g = Group.objects.get(name='Employe') 
@@ -537,7 +538,7 @@ def create_emp(request):
                     g.user_set.add(user)
 
                 Recharge.objects.create(id_employeur=employeur, montant_employe=amount, date=date.strftime("%Y-%m-%d %H:%M:%S"), id_employe=emp)
-    
+                AutoRecharge.objects.create(id_employeur=employeur, id_employe=emp, montant_employe=amount, date=date.strftime("%Y-%m-%d %H:%M:%S"))
                 print "here 3"
                 myemail = DjangoEmail()
                 myemail.send_email_validation_emp(first_name, user_name, password, email)
