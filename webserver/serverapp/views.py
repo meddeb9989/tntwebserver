@@ -109,7 +109,10 @@ def get_user(request):
         elif isinstance(user_type, Commercant):
             usr_type = u'Trader'
 
-        data = [{'valid' : True, 'active' : request.user.is_active, 'email' : request.user.email, 'id':request.user.id, 'group': group, 'type': usr_type, 'name' : request.user.first_name+" "+request.user.last_name}]
+        permission = request.user.has_perm('serverapp.add_employe')
+        print permission 
+
+        data = [{'valid' : True, 'permission' : permission, 'active' : request.user.is_active, 'email' : request.user.email, 'id':request.user.id, 'group': group, 'type': usr_type, 'name' : request.user.first_name+" "+request.user.last_name}]
     else:
         data = [{'valid' : False, 'Error' : u'Please Login'}]
 
