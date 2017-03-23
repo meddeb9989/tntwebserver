@@ -554,7 +554,7 @@ def create_emp(request):
 
                 next_year = datetime.datetime(year=date.year+1, month=date.month, day=date.day)
                 print next_year
-                code = random.randrange(0, 9999, 4)
+                code = random.randrange(1000, 9999, 4)
                 num_carte =int(str(190193187) + str(random.randrange(0, 999, 3)))
                 carte = Carte.objects.create(code=code, num_carte=num_carte, valide=True, solde=amount, date_expiration=next_year.strftime("%Y-%m-%d %H:%M:%S"))
                 
@@ -633,7 +633,7 @@ def valid_transaction(request, number, code, amount):
                 employe = Employe.objects.get(num_carte=carte)
                 user = User.objects.get(id=request.user.id)
                 commercant = Commercant.objects.get(user=user)
-                date = datetime.datetime.now()
+                date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                 Transaction.objects.create(id_employe=employe, id_commercant=commercant, date=date, montant=amount)
                 carte.solde=carte.solde-amount
