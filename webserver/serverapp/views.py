@@ -598,7 +598,8 @@ def valid_transaction(request, number, code, amount):
             data = amount_validity(carte, code, amount)
             if data[0]['valid']:
                 employe = Employe.objects.get(num_carte=carte)
-                commercant = Commercant.objects.get(user=int(request.user))
+                user = User.objects.get(id=request.user.id)
+                commercant = Commercant.objects.get(user=user)
                 date = datetime.datetime.now()
 
                 Transaction.objects.create(id_employe=employe, id_commercant=commercant, date=date, montant=float(amount))
