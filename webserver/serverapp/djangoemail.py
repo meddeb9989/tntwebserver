@@ -78,6 +78,39 @@ class DjangoEmail(object):
 
         return HttpResponse('email_two')
 
+    def send_email_validation_transaction_employe(self, amount, trader, email_employee, employe):
+        getemail = GetEmail()
+        subject = 'Reçu pour votre paiement à ' + trader 
+        email=str(unicode(email_employee))
+        to = [email]
+        from_email = 'tanndtech@gmail.com'
+        getemail.set_transaction_email(amount, trader, employe)
+
+        message = getemail.get_transaction_email()
+        msg = EmailMessage(subject, message, to=to, from_email=from_email, headers={"From":"TAN & TECH", "To":email})
+        msg.content_subtype = 'html'
+        msg.send()
+        print "email sent"
+
+        return HttpResponse('email_two')
+
+    def send_email_validation_transaction_trader(self, amount, trader, email_trader):
+        getemail = GetEmail()
+        subject = 'Paiement Reçu ' 
+        email=str(unicode(email_trader))
+        to = [email]
+        from_email = 'tanndtech@gmail.com'
+        getemail.set_trader_email(trader, amount)
+
+        message = getemail.get_trader_email()
+        msg = EmailMessage(subject, message, to=to, from_email=from_email, headers={"From":"TAN & TECH", "To":email})
+        msg.content_subtype = 'html'
+        msg.send()
+        print "email sent"
+
+        return HttpResponse('email_two')
+
+
 if __name__ == '__main__':
     email_one()
     email_two()

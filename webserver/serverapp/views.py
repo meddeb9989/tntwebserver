@@ -25,7 +25,9 @@ from django.template.loader import get_template
 from rest_framework.response import Response
 from django.db.models import Count
 from django.utils import timezone
+from webserver.serverapp.transactionshash import TransctionHash
 import requests
+import base64
 from decimal import *
 import json
 import random
@@ -405,22 +407,50 @@ def get_all_transactions(request):
 
     return JSONResponse(data)
 
+@api_view(['POST','GET'])
 def bank_transaction(request):
     login = 'admin'
     password = 'msif2017'
     website_url = "https://tntbankserver.herokuapp.com/"
     r = requests.post(website_url+"api-token-auth/", data={"username": login,"password":password})
-    token =json.loads(r.text)   
+    token =json.loads(r.text)
+    data = [{"valid": "Pas de transactions non valides"}]
     if u'non_field_errors' in token:
         print token
         data = [{'valid' : False}]
     else:
+        transactions_invalid = Transaction.objects.filter(confirmed=False)
         token = token[u'token']
+        hashtransaction = TransctionHash()
+        for transaction in transactions_invalid:
+
+            employe = str(base64.encodestring(hashtransaction.encrypt(str(transaction.id_employe), "fakher")))
+            trader = str(base64.encodestring(hashtransaction.encrypt(str(transaction.id_commercant), "fakher")))
+            montant = str(base64.encodestring(hashtransaction.encrypt(str(transaction.montant), "fakher")))
+            
+            name_employe = str(base64.encodestring(hashtransaction.encrypt(str("employe"), "fakher")))
+            name_trader = str(base64.encodestring(hashtransaction.encrypt(str("commerçant"), "fakher")))
+            name_montant = str(base64.encodestring(hashtransaction.encrypt(str("montant"), "fakher")))
+
+            data.append({name_employe : employe, name_trader : trader, name_montant : montant})
+
+        data = json.dumps(data)
         url=website_url+"transactions/"
-        r=requests.get(url, headers={'Authorization': 'Token '+token})
+        r=requests.get(url, headers={'Authorization': 'Token '+token}, json=data)
         user=json.loads(r.text)[0]
-        data = [{'valid' : True}]
         print "Transaction Sent"
+        if user['valid']:
+            data = json.loads(data)
+            data.insert(0, {'Confirmation Banque': True})
+            transactions_invalid = Transaction.objects.filter(confirmed=False)
+            for transaction in transactions_invalid:
+                transaction.confirmed = True
+                transaction.save()
+            print "Bank Confirmed"
+        else:
+            #data.append({'Confirmation Banque': False})
+            print "Bank Not Confirmed"
+        
     return JSONResponse(data)
 
 @api_view(['POST','GET'])
@@ -609,9 +639,10 @@ def valid_transaction(request, number, code, amount):
                 carte.solde=carte.solde-amount
                 carte.save()
 
-                myemail = SendEmail()
-                myemail.send_email_transaction_valid(str(amount), str(commercant), employe.email, commercant.email, str(employe))
-            
+                myemail = DjangoEmail()
+                myemail.send_email_validation_transaction_employe(amount, str(commercant), employe.email, str(employe))
+                myemail.send_email_validation_transaction_trader(amount, str(commercant), commercant.email)
+
         except Exception as e:
             print e
             data = [{'valid' : False, 'Error' : u'Transaction non effectuée'}]
@@ -693,7 +724,8 @@ def send_email(request):
     #myemail = SendEmail()
     #myemail.send_email_transaction_valid("19.90", "Farmer's Burger", "meddeb9989@hotmail.fr", "fakher9989@hotmail.fr", "Meddeb")
     #myemail.email_one()
-    myemail.email_two()
+    myemail.send_email_validation_transaction_employe("19.90", "Farmer's Burger", "meddeb9989@hotmail.fr", "Meddeb")
+    myemail.send_email_validation_transaction_trader("19.90", "Meddeb", "fakher9989@hotmail.fr")
     data = [{'valid' : True}]
     return JSONResponse(data)
 

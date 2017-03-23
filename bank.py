@@ -3,7 +3,15 @@
 
 import requests
 
-website_url="https://tntwebserver.herokuapp.com/"
-url=website_url+"send_email/"
-#r=requests.get(url)
-#print r.text
+login = 'admin'
+password = 'msif2017'
+website_url = "https://tntbankserver.herokuapp.com/"
+r = requests.post(website_url+"api-token-auth/", data={"username": login,"password":password})
+token =json.loads(r.text)
+data = [{"valid": "Pas de transactions non valides"}]
+if u'non_field_errors' in token:
+    data = [{'valid' : False}]
+else:
+    token = token[u'token']
+    url=website_url+"transactions/"
+    r=requests.get(url, headers={'Authorization': 'Token '+token})
