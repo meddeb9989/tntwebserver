@@ -51,7 +51,7 @@ class DjangoEmail(object):
     def send_email_validation_user(self, first_name, activation_key, email):
         getemail = GetEmail()
         subject = "Valider votre compte AVENTIX"
-        to = ['fakher9989@hotmail.fr']
+        to = [email]
         from_email = 'tanndtech@gmail.com'
         getemail.set_valid_email(str(first_name), str(activation_key))
 
@@ -59,7 +59,23 @@ class DjangoEmail(object):
         msg = EmailMessage(subject, message, to=to, from_email=from_email)
         msg.content_subtype = 'html'
         msg.send()
-    
+        print "email sent"
+
+        return HttpResponse('email_two')
+
+    def send_email_validation_emp(self, first_name, user_name, password, email):
+        getemail = GetEmail()
+        subject = "Bienvenue à AVENTIX"
+        to = [email]
+        from_email = 'tanndtech@gmail.com'
+        getemail.set_validemp_email(str(first_name), str(user_name), str(password))
+
+        message = getemail.get_validemp_email()
+        msg = EmailMessage(subject, message, to=to, from_email=from_email, headers={"From":"TAN & TECH", "To":email})
+        msg.content_subtype = 'html'
+        msg.send()
+        print "email sent"
+
         return HttpResponse('email_two')
 
 if __name__ == '__main__':

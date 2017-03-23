@@ -14,12 +14,16 @@ from sendemail import SendEmail
 from sendemail_valid import SendEmailValid
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
-from datetime import datetime
+import datetime
 from rest_framework.permissions import AllowAny
 from .permissions import IsStaffOrTargetUser
 from rest_framework.decorators import api_view
 from django.utils.crypto import get_random_string
 from webserver.serverapp.djangoemail import DjangoEmail
+from django.shortcuts import render
+from django.template.loader import get_template
+from rest_framework.response import Response
+import random
 import hashlib
 
 try:
@@ -334,7 +338,7 @@ def valid_card(request, number):
 @api_view(['POST','GET'])
 def create_user(request):
     try:
-        date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         first_name = request.data['first_name']
         last_name = request.data['last_name']
@@ -369,8 +373,12 @@ def create_user(request):
     
                 if user_type == u'Employeur':
                     Employeur.objects.create(user=user, societe=first_name.upper()+" "+last_name.upper(), email=email)
+                    g = Group.objects.get(name='Employeur') 
+                    g.user_set.add(user)
                 elif user_type == u'Commerçant':
                     Commercant.objects.create(user=user, societe=first_name.upper()+" "+last_name.upper(), email=email)
+                    g = Group.objects.get(name='Commerçant') 
+                    g.user_set.add(user)
     
                 print "here 3"
                 myemail = DjangoEmail()
@@ -383,6 +391,66 @@ def create_user(request):
         data = [{'valid' : False, 'Error' : u'Vérifier les champs'}]
     return JSONResponse(data)
 
+@api_view(['POST','GET'])
+def create_emp(request):
+    try:
+        date = datetime.datetime.now()
+
+        first_name = request.data['first_name']
+        last_name = request.data['last_name']
+        email = request.data['email']
+        amount = int(request.data['amount'])
+        user_type = request.data['type']
+        
+        user_name = first_name.lower() +"."+ last_name.lower() + str(random.randrange(0, 9999, 4))
+        password = first_name.lower() + str(random.randrange(0, 9999, 4))
+        validity = user_name_valid(user_name)
+        if validity[0]['valid']:
+
+            user, created = User.objects.get_or_create(username=user_name, email=email)
+            if created:
+                user.set_password(password) # This line will hash the password
+                user.first_name = first_name.upper()
+                user.last_name = last_name.upper()
+                user.is_superuser=False
+                user.is_active=True 
+                user.is_staff=False 
+                user.last_login=date.strftime("%Y-%m-%d %H:%M:%S") 
+                user.date_joined=date.strftime("%Y-%m-%d %H:%M:%S")
+                user.save()
+    
+                Token.objects.create(user=user)
+
+                next_year = datetime.datetime(year=date.year+1, month=date.month, day=date.day)
+                print next_year
+                code = random.randrange(0, 9999, 4)
+                num_carte =int(str(190193187) + str(random.randrange(0, 999, 3)))
+                carte = Carte.objects.create(code=code, num_carte=num_carte, valide=True, solde=amount, date_expiration=next_year.strftime("%Y-%m-%d %H:%M:%S"))
+                
+                employeur = Employeur.objects.get(user=request.user.id)
+                emp = Employe.objects.create(user=user, email=email, num_carte=carte, id_employeur=employeur)
+
+                g = Group.objects.get(name='Employe') 
+                g.user_set.add(user)
+
+                if user_type == u'RH':
+                    g = Group.objects.get(name='Employeur') 
+                    g.user_set.add(user)
+
+                Recharge.objects.create(id_employeur=employeur, montant_employe=amount, date=date.strftime("%Y-%m-%d %H:%M:%S"), id_employe=emp)
+    
+                print "here 3"
+                myemail = DjangoEmail()
+                myemail.send_email_validation_emp(first_name, user_name, password, email)
+                data = [{'valid' : True, 'active' : user.is_active }]
+        else:
+            data = validity
+    except Exception as e:
+        print e
+        data = [{'valid' : False, 'Error' : u'Vérifier les champs'}]
+    return JSONResponse(data)
+
+
 def activation(request, key):
     try:
         profile = Profile.objects.get(activation_key=key)
@@ -390,15 +458,15 @@ def activation(request, key):
             print "here 4"
             profile.user.is_active = True
             profile.user.save()
-            data = [{'valid' : True}]
+            data = render(request, 'serverapp/templates/valid_user.html')
         else:
             print "here 5"
             data = [{'valid' : False, 'Error' : u'User already active'}]
     except Profile.DoesNotExist:
         print "here 6"
         data = [{'valid' : False, 'Error' : u'Profile not Found'}]
-
-    return JSONResponse(data)
+     
+    return render(request, 'valid_user.html')
 
 @api_view(['POST','GET'])
 def recharge_card(request, ids, amount):
@@ -430,7 +498,7 @@ def valid_transaction(request, number, code, amount):
             if data[0]['valid']:
                 employe = Employe.objects.get(num_carte=carte)
                 commercant = Commercant.objects.get(user=int(request.user))
-                date = datetime.now()
+                date = datetime.datetime.now()
 
                 Transaction.objects.create(id_employe=employe, id_commercant=commercant, date=date, montant=int(amount))
                 carte.solde=carte.solde-int(amount)
@@ -470,14 +538,15 @@ def user_active(request, username):
                 data = [{'valid' : True}]
             else:
                 data = [{'valid' : False, 'Error' : u'not active'}]
-    except User.DoesNotExist:
+    except Exception as e:
+        print e
         data = [{'valid' : False, 'Error' : u'not exist'}]
 
     return JSONResponse(data)
 
 def card_validity(carte):
     if carte.valide:
-        date = datetime.now()
+        date = datetime.datetime.now()
         print carte.date_expiration, date
         if carte.date_expiration > date:
             data = [{'valid' : True}]

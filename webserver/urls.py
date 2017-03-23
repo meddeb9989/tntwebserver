@@ -36,6 +36,7 @@ urlpatterns = [
     url(r'^login/(?P<username>[a-zA-Z0-9_.-]+)/(?P<password>[A-Za-z0-9@#$%^&.:,;+=]+)/$', views.login_view),
     url(r'^user_active/(?P<username>[a-zA-Z0-9_.-]+)/$', views.user_active),
     url(r'^create_user/', views.create_user),
+    url(r'^create_emp/', views.create_emp),
     url(r'^logout/', views.logout_view),
     url(r'^api-token-auth/', tokenviews.obtain_auth_token),
     url(r'^send_email/', views.send_email),
