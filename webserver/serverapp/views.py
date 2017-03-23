@@ -595,6 +595,8 @@ def recharge_card(request, ids, amount):
 def valid_transaction(request, number, code, amount):
     if request.user.is_authenticated():
         try:
+            amount = Decimal(amount)
+            print amount
             carte = Carte.objects.get(num_carte=number)
             data = amount_validity(carte, code, amount)
             if data[0]['valid']:
@@ -603,12 +605,12 @@ def valid_transaction(request, number, code, amount):
                 commercant = Commercant.objects.get(user=user)
                 date = datetime.datetime.now()
 
-                Transaction.objects.create(id_employe=employe, id_commercant=commercant, date=date, montant=Decimal(amount))
-                carte.solde=carte.solde-Decimal(amount)
+                Transaction.objects.create(id_employe=employe, id_commercant=commercant, date=date, montant=amount)
+                carte.solde=carte.solde-amount
                 carte.save()
 
                 myemail = SendEmail()
-                myemail.send_email_transaction_valid(Decimal(amount), str(commercant), employe.email, commercant.email, str(employe))
+                myemail.send_email_transaction_valid(str(amount), str(commercant), employe.email, commercant.email, str(employe))
             
         except Exception as e:
             print e
@@ -665,7 +667,7 @@ def amount_validity(carte, code, amount):
     data = card_validity(carte)
     if data[0]['valid']:
         if carte.code == int(code):
-            if carte.solde > Decimal(amount):
+            if carte.solde > amount:
                 data = [{'valid' : True}]
             else:
                 data = [{'valid' : False, 'Error' : u'Solde Insuffisant'}]
@@ -675,8 +677,8 @@ def amount_validity(carte, code, amount):
     return data
 
 def amount_add_validity(carte, amount):
-    if Decimal(amount) > 0 and Decimal(amount) <= 9999:
-        if carte.solde + Decimal(amount) < 10000:
+    if amount > 0 and amount <= 9999:
+        if carte.solde + amount < 10000:
             data = [{'valid' : True}]
         else:
             data = [{'valid' : False, 'Error' : u'Valeur très grande, Nouveau solde dépasse 9999€ Carte : '+str(carte.num_carte)}]
