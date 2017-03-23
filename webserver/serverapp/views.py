@@ -23,6 +23,8 @@ from webserver.serverapp.djangoemail import DjangoEmail
 from django.shortcuts import render
 from django.template.loader import get_template
 from rest_framework.response import Response
+import requests
+import json
 import random
 import hashlib
 
@@ -321,8 +323,21 @@ def get_all_transactions(request):
     return JSONResponse(data)
 
 def bank_transaction(request):
-    data = [{'valid' : True}]
-    print "Transaction Sent"
+    login = 'admin'
+    password = 'msif2017'
+    website_url = "https://tntbankserver.herokuapp.com/"
+    r = requests.post(website_url+"api-token-auth/", data={"username": login,"password":password})
+    token =json.loads(r.text)   
+    if u'non_field_errors' in token:
+        print token
+        data = [{'valid' : False}]
+    else:
+        token = token[u'token']
+        url=website_url+"transactions/"
+        r=requests.get(url, headers={'Authorization': 'Token '+token})
+        user=json.loads(r.text)[0]
+        data = [{'valid' : True}]
+        print "Transaction Sent"
     return JSONResponse(data)
 
 @api_view(['POST','GET'])

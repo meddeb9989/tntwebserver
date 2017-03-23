@@ -98,3 +98,12 @@ class Recharge(models.Model):
 
     def __str__(self):
         return "Employeur : " + str(self.id_employeur) +  " Employe : " + str(self.id_employe) +" Date: " + str(self.date)
+
+class AutoRecharge(models.Model):
+    id_employeur = models.ForeignKey('Employeur', on_delete=models.CASCADE)
+    id_employe = models.ForeignKey('Employe', default=False, on_delete=models.CASCADE)
+    montant_employe = models.DecimalField(max_digits=7, decimal_places=2)
+    date = models.DateTimeField()
+
+    def __str__(self):
+        return "Employeur : " + str(self.id_employeur) +  " Employe : " + str(self.id_employe) +" Date: " + str(self.date)
