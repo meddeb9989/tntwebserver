@@ -640,8 +640,8 @@ def valid_transaction(request, number, code, amount):
                 carte.save()
 
                 myemail = DjangoEmail()
-                myemail.send_email_validation_transaction_employe(amount, str(commercant), employe.email, str(employe))
-                myemail.send_email_validation_transaction_trader(amount, str(commercant), commercant.email)
+                myemail.send_email_validation_transaction_employe(str(amount), str(commercant), employe.email, str(employe))
+                myemail.send_email_validation_transaction_trader(str(amount), str(commercant), commercant.email)
 
         except Exception as e:
             print e
