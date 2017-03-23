@@ -608,7 +608,8 @@ def valid_transaction(request, number, code, amount):
                 myemail = SendEmail()
                 myemail.send_email_transaction_valid(str(amount), str(commercant), employe.email, commercant.email, str(employe))
             
-        except Exception:
+        except Exception as e:
+            print e
             data = [{'valid' : False, 'Error' : u'Transaction non effectuée'}]
     else:
         data = [{'valid' : False, 'Error' : u'Please login'}]
