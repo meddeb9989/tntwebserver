@@ -9,7 +9,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.renderers import JSONRenderer
 from webserver.serverapp.serializers import UserSerializer, GroupSerializer
-from webserver.serverapp.models import Profile, Carte, Transaction, Commercant, Employe, Employeur, Recharge
+from webserver.serverapp.models import AutoRecharge, Profile, Carte, Transaction, Commercant, Employe, Employeur, Recharge
 from sendemail import SendEmail
 from sendemail_valid import SendEmailValid
 from django.contrib.auth.decorators import login_required
@@ -23,6 +23,8 @@ from webserver.serverapp.djangoemail import DjangoEmail
 from django.shortcuts import render
 from django.template.loader import get_template
 from rest_framework.response import Response
+from django.db.models import Count
+from django.utils import timezone
 import requests
 import json
 import random
@@ -285,6 +287,85 @@ def get_rh_cads(request):
 
     return JSONResponse(data)
       
+@api_view(['POST','GET'])
+def get_trader_header(request):
+    if request.user.is_authenticated():
+        try:
+            user = User.objects.get(id=request.user.id)
+            trader = Commercant.objects.get(user=user)
+            transactions = Transaction.objects.filter(id_commercant=trader.id).count()
+            somme = 0
+            coming = 0
+            transactions_valid = Transaction.objects.filter(id_commercant=trader.id, confirmed=True)
+            transactions_invalid = Transaction.objects.filter(id_commercant=trader.id, confirmed=False)
+
+            for tran in transactions_valid:
+                somme = somme + tran.montant
+            for tran in transactions_invalid:
+                coming = coming + tran.montant
+
+            clients = Transaction.objects.filter(id_commercant=trader.id).values('id_employe').annotate(dcount=Count('id_employe')).count()
+            data = [{'valid' : True, 'h1': somme, 'h2': coming, 'h3': transactions, 'h4': clients}]
+        except Exception as e:
+            print e
+            data = [{'valid' : False, 'Error' : u'Pas de Transactions'}]
+    else:
+        data = [{'valid' : False, 'Error' : u'Please login'}]
+
+    return JSONResponse(data)
+
+
+@api_view(['POST','GET'])
+def get_employeur_header(request):
+    if request.user.is_authenticated():
+        try:
+            valid_card = 0
+            invalid_card = 0
+            user = User.objects.get(id=request.user.id)
+            employeur = Employeur.objects.get(user=user)
+            employes = Employe.objects.filter(id_employeur=employeur)
+            for employe in employes:
+                carte = Carte.objects.get(id=employe.num_carte.id)
+                data = card_validity(carte)
+                if data[0]['valid']:
+                    valid_card = valid_card + 1
+                else:
+                    invalid_card = invalid_card + 1
+            recharges = Recharge.objects.filter(id_employeur=employeur).count()
+            comnig = 0
+            autocards = AutoRecharge.objects.filter(id_employeur=employeur)
+            print "here 1"
+            for autocard in autocards:
+                print autocard.montant_employe
+                comnig = comnig + int(autocard.montant_employe)
+            print "here 2"
+            data = [{'valid' : True, 'h1': valid_card, 'h2': invalid_card, 'h3': recharges, 'h4': comnig}]
+        except Exception as e:
+            print e
+            data = [{'valid' : False, 'Error' : u'Pas de Transactions'}]
+    else:
+        data = [{'valid' : False, 'Error' : u'Please login'}]
+
+    return JSONResponse(data)
+
+@api_view(['POST','GET'])
+def get_employe_header(request):
+    if request.user.is_authenticated():
+        try:
+            user = User.objects.get(id=request.user.id)
+            employe = Employe.objects.get(user=user)
+            montant = Carte.objects.get(id=employe.num_carte.id).solde
+            transactions = Transaction.objects.filter(id_employe=employe).count()
+            coming = AutoRecharge.objects.get(id_employe=employe).montant_employe
+            employeur = str(Employeur.objects.get(id=employe.id_employeur.id))
+            data = [{'valid' : True, 'h1': montant, 'h2': transactions, 'h3': coming, 'h4': employeur}]
+        except Exception as e:
+            print e
+            data = [{'valid' : False, 'Error' : u'Pas de Transactions'}]
+    else:
+        data = [{'valid' : False, 'Error' : u'Please login'}]
+
+    return JSONResponse(data)
 
 @api_view(['POST','GET'])
 def get_all_transactions(request):
@@ -299,7 +380,7 @@ def get_all_transactions(request):
                         transactions = Transaction.objects.filter(id_employe=user_type)
                         data = [{'valid' : True}]
                         for tran in transactions:
-                            tr = {'id':user_type.id, 'Transaction' : str(tran.id_commercant), 'Date': tran.date, 'Montant': str(tran.montant)}
+                            tr = {'id':user_type.id, 'Transaction' : str(tran.id_commercant), 'Date': tran.date, 'Montant': str(tran.montant), 'confirmed': tran.confirmed}
                             data.insert(1, tr)
                     except Exception:
                         data = [{'valid' : False, 'Error' : u'Pas de Transactions'}]
@@ -308,7 +389,7 @@ def get_all_transactions(request):
                         transactions = Transaction.objects.filter(id_commercant=user_type)
                         data = [{'valid' : True}]
                         for tran in transactions:
-                            tr = {'id':user_type.id, 'Transaction' : str(tran.id_employe), 'Date': tran.date, 'Montant': str(tran.montant)}
+                            tr = {'id':user_type.id, 'Transaction' : str(tran.id_employe), 'Date': tran.date, 'Montant': str(tran.montant), 'confirmed': tran.confirmed}
                             data.insert(1, tr)
                     except Exception:
                         data = [{'valid' : False, 'Error' : u'Pas de Transactions'}]
@@ -564,7 +645,7 @@ def user_active(request, username):
 
 def card_validity(carte):
     if carte.valide:
-        date = datetime.datetime.now()
+        date = timezone.now()
         print carte.date_expiration, date
         if carte.date_expiration > date:
             data = [{'valid' : True}]
