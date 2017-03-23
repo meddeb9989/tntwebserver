@@ -601,12 +601,12 @@ def valid_transaction(request, number, code, amount):
                 commercant = Commercant.objects.get(user=int(request.user))
                 date = datetime.datetime.now()
 
-                Transaction.objects.create(id_employe=employe, id_commercant=commercant, date=date, montant=int(amount))
-                carte.solde=carte.solde-int(amount)
+                Transaction.objects.create(id_employe=employe, id_commercant=commercant, date=date, montant=float(amount))
+                carte.solde=carte.solde-float(amount)
                 carte.save()
 
                 myemail = SendEmail()
-                myemail.send_email_transaction_valid(str(amount), str(commercant), employe.email, commercant.email, str(employe))
+                myemail.send_email_transaction_valid(float(amount), str(commercant), employe.email, commercant.email, str(employe))
             
         except Exception as e:
             print e
@@ -663,7 +663,7 @@ def amount_validity(carte, code, amount):
     data = card_validity(carte)
     if data[0]['valid']:
         if carte.code == int(code):
-            if carte.solde > int(amount):
+            if carte.solde > float(amount):
                 data = [{'valid' : True}]
             else:
                 data = [{'valid' : False, 'Error' : u'Solde Insuffisant'}]
@@ -673,8 +673,8 @@ def amount_validity(carte, code, amount):
     return data
 
 def amount_add_validity(carte, amount):
-    if int(amount) > 0 and int(amount) <= 9999:
-        if carte.solde + int(amount) < 10000:
+    if float(amount) > 0 and float(amount) <= 9999:
+        if carte.solde + float(amount) < 10000:
             data = [{'valid' : True}]
         else:
             data = [{'valid' : False, 'Error' : u'Valeur très grande, Nouveau solde dépasse 9999€ Carte : '+str(carte.num_carte)}]
