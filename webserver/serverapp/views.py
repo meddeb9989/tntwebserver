@@ -352,10 +352,11 @@ def get_employeur_header(request):
 def get_employe_header(request):
     if request.user.is_authenticated():
         try:
+            transactions = 0
             user = User.objects.get(id=request.user.id)
             employe = Employe.objects.get(user=user)
             montant = Carte.objects.get(id=employe.num_carte.id).solde
-            transactions = Transaction.objects.filter(id_employe=employe).count()
+            transactions = transactions + Transaction.objects.filter(id_employe=employe).count()
             coming = AutoRecharge.objects.get(id_employe=employe).montant_employe
             employeur = str(Employeur.objects.get(id=employe.id_employeur.id))
             data = [{'valid' : True, 'h1': montant, 'h2': transactions, 'h3': coming, 'h4': employeur}]
