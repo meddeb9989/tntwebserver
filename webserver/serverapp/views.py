@@ -262,7 +262,7 @@ def get_cards(request):
                         data = [{'valid' : True}]
                         for employe in employes:
                             groups=employe.user.groups.all()
-                            print groups
+                            print groups, len(groups)
                             if len(groups)>1:
                                 group = True
                             had_permission = employe.user.has_perm('serverapp.add_employe')
@@ -591,6 +591,10 @@ def create_emp(request):
                 user_employeur = User.objects.get(id=request.user.id)
                 employeur = Employeur.objects.get(user=user_employeur)
                 emp = Employe.objects.create(user=user, email=email, num_carte=carte, id_employeur=employeur)
+
+                g = Group.objects.get(name='Employe') 
+                g.user_set.add(user)
+                g.save()
 
                 if user_type == u'rh':
                     g = Group.objects.get(name='Employeur') 
