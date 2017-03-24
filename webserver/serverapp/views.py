@@ -265,7 +265,7 @@ def get_cards(request):
                             print groups, len(groups)
                             for grp in groups:
                                 print grp
-                                if grp =='Employeur':
+                                if grp == Employeur:
                                     group = True
                             had_permission = employe.user.has_perm('serverapp.add_employe')
                             card = Carte.objects.get(employe=employe)
