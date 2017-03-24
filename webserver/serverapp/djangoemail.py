@@ -56,7 +56,7 @@ class DjangoEmail(object):
         getemail.set_valid_email(str(first_name), str(activation_key))
 
         message = getemail.get_valid_email()
-        msg = EmailMessage(subject, message, to=to, from_email=from_email)
+        msg = EmailMessage(subject, message, to=to, from_email=from_email, headers={"From":"TAN & TECH", "To":email})
         msg.content_subtype = 'html'
         msg.send()
         print "email sent"

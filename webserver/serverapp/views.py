@@ -26,6 +26,7 @@ from rest_framework.response import Response
 from django.db.models import Count
 from django.utils import timezone
 from webserver.serverapp.transactionshash import TransctionHash
+from django.contrib.auth.models import Permission
 import requests
 import base64
 from decimal import *
@@ -162,6 +163,25 @@ def bloc_card(request):
 
     return JSONResponse(data)
 
+
+@api_view(['POST','GET'])
+def add_permission_id(request, ids):
+    if request.user.is_authenticated():
+        user_type=detect_user_type(request.user.id)
+        if user_type is not None:
+            carte = Carte.objects.get(id=int(ids))
+            employe = Employe.objects.get(num_carte=carte)
+            permission = Permission.objects.get(name='Can add employe')
+            employe.user.user_permissions.add(permission)
+            employe.user.save()
+            data = [{'valid' : True}]
+        else:
+            data = [{'valid' : False, 'Error' : u'User not Found'}]
+    else:
+        data = [{'valid' : False, 'Error' : u'Please Login'}]
+
+    return JSONResponse(data)
+
 @api_view(['POST','GET'])
 def bloc_card_id(request, ids):
     if request.user.is_authenticated():
@@ -237,12 +257,19 @@ def get_cards(request):
                 emplyes = None
                 if isinstance(user_type, Employeur):
                     try:
+                        group = False
                         employes = Employe.objects.filter(id_employeur=user_type)
                         data = [{'valid' : True}]
                         for employe in employes:
+                            groups=employe.user.groups.all()
+
+                            if len(groups)>1:
+                                group = True
+                            had_permission = employe.user.has_perm('serverapp.add_employe')
                             card = Carte.objects.get(employe=employe)
-                            crd = {'id':card.id, 'Carte' : str(card.num_carte), 'Date': card.date_expiration, 'valid_card': card.valide, 'Nom': str(employe)}
+                            crd = {'id':card.id, 'Carte' : str(card.num_carte), 'rh_group': group, 'had_permission' : had_permission, 'add_permission': True, 'Date': card.date_expiration, 'valid_card': card.valide, 'Nom': str(employe)}
                             data.append(crd)
+                        print data
                     except Exception as e:
                         data = [{'valid' : False, 'Error' : u'Pas de Cartes'}]
                 else:
@@ -273,7 +300,7 @@ def get_rh_cads(request):
                         data = [{'valid' : True}]
                         for employe in employes:
                             card = Carte.objects.get(employe=employe)
-                            crd = {'id':card.id, 'Carte' : str(card.num_carte), 'Date': card.date_expiration, 'valid_card': card.valide, 'Nom': str(employe)}
+                            crd = {'id':card.id, 'Carte' : str(card.num_carte), 'add_permission': False, 'Date': card.date_expiration, 'valid_card': card.valide, 'Nom': str(employe)}
                             data.append(crd)
                     except Exception as e:
                         print e
@@ -506,6 +533,9 @@ def create_user(request):
                     Employeur.objects.create(user=user, societe=first_name.upper()+" "+last_name.upper(), email=email)
                     g = Group.objects.get(name='Employeur') 
                     g.user_set.add(user)
+                    permission = Permission.objects.get(name='Can add employe')
+                    user.user_permissions.add(permission)
+                    user.save()
                 elif user_type == u'Commerçant':
                     Commercant.objects.create(user=user, societe=first_name.upper()+" "+last_name.upper(), email=email)
                     g = Group.objects.get(name='Commerçant') 
