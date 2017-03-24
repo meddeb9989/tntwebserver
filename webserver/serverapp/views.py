@@ -594,10 +594,12 @@ def create_emp(request):
 
                 g = Group.objects.get(name='Employe') 
                 g.user_set.add(user)
+                g.save()
 
                 if user_type == u'rh':
                     g = Group.objects.get(name='Employeur') 
                     g.user_set.add(user)
+                    g.save()
 
                 Recharge.objects.create(id_employeur=employeur, montant_employe=amount, date=date.strftime("%Y-%m-%d %H:%M:%S"), id_employe=emp)
 
