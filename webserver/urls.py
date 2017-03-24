@@ -47,7 +47,7 @@ urlpatterns = [
     url(r'^transactions/', views.get_all_transactions),
     url(r'^cards/', views.get_cards),
     url(r'^get_card/(?P<ids>[0-9]+)/$', views.get_card),
-    url(r'^recharge_card/(?P<ids>[0-9]+)/(?P<amount>[0-9.0-9]+)/$', views.recharge_card),
+    url(r'^recharge_card/(?P<ids>[0-9]+)/(?P<amount>[0-9.0-9]+)/(?P<monthly>[a-zA-Z0-9_.-]+)/$', views.recharge_card),
     url(r'^bloc_card_id/(?P<ids>[0-9]+)/$', views.bloc_card_id),
     url(r'^rh_cards/', views.get_rh_cads),
     url(r'^bloc_card/', views.bloc_card),

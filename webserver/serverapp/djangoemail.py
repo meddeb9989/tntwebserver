@@ -63,12 +63,12 @@ class DjangoEmail(object):
 
         return HttpResponse('email_two')
 
-    def send_email_validation_emp(self, first_name, user_name, password, email):
+    def send_email_validation_emp(self, first_name, user_name, password, email, code):
         getemail = GetEmail()
         subject = "Bienvenue à AVENTIX"
         to = [email]
         from_email = 'tanndtech@gmail.com'
-        getemail.set_validemp_email(str(first_name), str(user_name), str(password))
+        getemail.set_validemp_email(str(first_name), str(user_name), str(password), str(code))
 
         message = getemail.get_validemp_email()
         msg = EmailMessage(subject, message, to=to, from_email=from_email, headers={"From":"TAN & TECH", "To":email})
@@ -103,6 +103,22 @@ class DjangoEmail(object):
         getemail.set_trader_email(trader, amount)
 
         message = getemail.get_trader_email()
+        msg = EmailMessage(subject, message, to=to, from_email=from_email, headers={"From":"TAN & TECH", "To":email})
+        msg.content_subtype = 'html'
+        msg.send()
+        print "email sent"
+
+        return HttpResponse('email_two')
+
+    def send_email_validation_recharge(self, amount, email_employee, employe, montant_employe, solde):
+        getemail = GetEmail()
+        subject = 'Recharge effectuée par votre employeur' 
+        email=str(unicode(email_employee))
+        to = [email]
+        from_email = 'tanndtech@gmail.com'
+        getemail.set_email_validation_recharge(amount, employe, montant_employe, solde)
+
+        message = getemail.get_email_validation_recharge()
         msg = EmailMessage(subject, message, to=to, from_email=from_email, headers={"From":"TAN & TECH", "To":email})
         msg.content_subtype = 'html'
         msg.send()

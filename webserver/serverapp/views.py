@@ -484,8 +484,8 @@ def create_user(request):
             user, created = User.objects.get_or_create(username=user_name, email=email)
             if created:
                 user.set_password(password) # This line will hash the password
-                user.first_name = first_name.upper()
-                user.last_name = last_name.upper()
+                user.first_name = first_name.title()
+                user.last_name = last_name.title()
                 user.is_superuser=False
                 user.is_active=False 
                 user.is_staff=False 
@@ -541,8 +541,8 @@ def create_emp(request):
             user, created = User.objects.get_or_create(username=user_name, email=email)
             if created:
                 user.set_password(password) # This line will hash the password
-                user.first_name = first_name.upper()
-                user.last_name = last_name.upper()
+                user.first_name = last_name.title()
+                user.last_name = first_name.title()
                 user.is_superuser=False
                 user.is_active=True 
                 user.is_staff=False 
@@ -570,10 +570,15 @@ def create_emp(request):
                     g.user_set.add(user)
 
                 Recharge.objects.create(id_employeur=employeur, montant_employe=amount, date=date.strftime("%Y-%m-%d %H:%M:%S"), id_employe=emp)
-                AutoRecharge.objects.create(id_employeur=employeur, id_employe=emp, montant_employe=amount, date=date.strftime("%Y-%m-%d %H:%M:%S"))
+
+                if request.data['monthly']==True:
+                    AutoRecharge.objects.create(id_employeur=employeur, id_employe=emp, montant_employe=amount, date=date.strftime("%Y-%m-%d %H:%M:%S"))
+                else:
+                    AutoRecharge.objects.create(id_employeur=employeur, id_employe=emp, montant_employe=0, date=date.strftime("%Y-%m-%d %H:%M:%S"))
+                
                 print "here 3"
                 myemail = DjangoEmail()
-                myemail.send_email_validation_emp(first_name, user_name, password, email)
+                myemail.send_email_validation_emp(first_name, user_name, password, email, code)
                 data = [{'valid' : True, 'active' : user.is_active }]
         else:
             data = validity
@@ -601,17 +606,28 @@ def activation(request, key):
     return render(request, 'valid_user.html')
 
 @api_view(['POST','GET'])
-def recharge_card(request, ids, amount):
+def recharge_card(request, ids, amount, monthly):
     if request.user.is_authenticated():
         try:
+            date = datetime.datetime.now()
+            amount = Decimal(amount)
             carte = Carte.objects.get(id=int(ids))
-            data = amount_add_validity(carte, Decimal(amount))
+            data = amount_add_validity(carte, amount)
             if data[0]['valid']:
                 employe = Employe.objects.get(num_carte=carte)
-                carte.solde=carte.solde+Decimal(amount)
+                employeur = Employeur.objects.get(id=employe.id_employeur.id)
+                carte.solde=carte.solde+amount
                 carte.save()
-                #myemail = SendEmail()
-                #myemail.send_email_recharge_valid(str(amount), employe.email, str(employe))
+                Recharge.objects.create(id_employeur=employeur, id_employe=employe, montant_employe=amount, date=date.strftime("%Y-%m-%d %H:%M:%S"))
+                auto = AutoRecharge.objects.get(id_employe=employe)
+                print request.data
+                print monthly
+                if monthly == "True":
+                    auto.montant_employe = amount
+                    auto.save()
+
+                myemail = DjangoEmail()
+                myemail.send_email_validation_recharge(str(amount), employe.email, str(employe), str(auto.montant_employe), str(carte.solde))
 
         except Exception as e:
             print e
@@ -626,7 +642,6 @@ def valid_transaction(request, number, code, amount):
     if request.user.is_authenticated():
         try:
             amount = Decimal(amount)
-            print amount
             carte = Carte.objects.get(num_carte=number)
             data = amount_validity(carte, code, amount)
             if data[0]['valid']:
@@ -708,7 +723,7 @@ def amount_validity(carte, code, amount):
     return data
 
 def amount_add_validity(carte, amount):
-    if amount > 0 and amount <= 9999:
+    if amount >= 0 and amount <= 9999:
         if carte.solde + amount < 10000:
             data = [{'valid' : True}]
         else:
