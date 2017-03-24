@@ -603,7 +603,7 @@ def create_emp(request):
 
                 Recharge.objects.create(id_employeur=employeur, montant_employe=amount, date=date.strftime("%Y-%m-%d %H:%M:%S"), id_employe=emp)
 
-                if request.data['monthly']==True:
+                if request.data['monthly']=="True":
                     AutoRecharge.objects.create(id_employeur=employeur, id_employe=emp, montant_employe=amount, date=date.strftime("%Y-%m-%d %H:%M:%S"))
                 else:
                     AutoRecharge.objects.create(id_employeur=employeur, id_employe=emp, montant_employe=0, date=date.strftime("%Y-%m-%d %H:%M:%S"))
