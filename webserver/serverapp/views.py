@@ -262,6 +262,7 @@ def get_cards(request):
                         data = [{'valid' : True}]
                         for employe in employes:
                             groups=employe.user.groups.all()
+                            print groups
                             if len(groups)>1:
                                 group = True
                             had_permission = employe.user.has_perm('serverapp.add_employe')
